@@ -309,6 +309,7 @@ def search_trends():
 
 
 if __name__ == "__main__":
-    # App Engine sẽ gán cổng qua biến môi trường PORT
-    port = int(os.environ.get('PORT', 8080)) # App Engine thường dùng 8080 mặc định
+    # Hugging Face Spaces sẽ cung cấp PORT qua biến môi trường
+    # Mặc định của Flask là 5000, chúng ta sẽ dùng nó nếu PORT không được cung cấp.
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
