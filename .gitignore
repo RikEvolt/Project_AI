@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.memo
+venv/
+.venv/
+env/
+.env/
+
+# Môi trường ảo
+# Thư mục venv của bạn
+venv/
+
+# Biến môi trường
+.env
+
+# Dữ liệu cục bộ / file tạm
+.ipynb_checkpoints/
+.pytest_cache/
+.vscode/ # Nếu bạn dùng VS Code, có thể muốn bỏ qua các cài đặt workspace cục bộ
+
+# Các file tạo ra bởi TensorFlow / Keras (logs, checkpoints)
+# Lưu ý: Các file mô hình .h5 và .pkl sẽ được quản lý bằng Git LFS
+# Nhưng nếu có các file log, checkpoint khác không phải là mô hình cuối cùng, có thể bỏ qua
+*.log
+checkpoints/
+logs/
+
+# Render.com / Deployment (nếu có các file tạm khác)
+.render-build.log
+
+# Dữ liệu bạn có thể cào hoặc sinh ra
+data/*.csv # Ví dụ nếu bạn lưu dữ liệu cào vào đây
+data/*.json
