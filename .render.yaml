@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: ai-seo-api # Or your service name
+    env: python
+    pythonVersion: 3.11.x # Or 3.10.x, depending on your TensorFlow version
+    buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm
+    startCommand: gunicorn app:app
