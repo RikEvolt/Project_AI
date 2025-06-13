@@ -1,0 +1,19 @@
+# app.yaml
+runtime: python311 # Chỉ định rõ phiên bản Python (dùng 3.11 để tương thích với TF 2.19.0)
+env: standard
+
+# instance_class: F1 là instance nhỏ nhất, miễn phí theo Free Tier
+# Nếu bạn có nhu cầu tính toán nặng hơn hoặc cần nhiều RAM hơn
+# bạn có thể cần instance_class lớn hơn, nhưng sẽ tốn phí.
+instance_class: F1
+
+# Cấu hình entrypoint để chạy Gunicorn
+# Đây là lệnh mà App Engine sẽ sử dụng để khởi động ứng dụng của bạn.
+# -b :$PORT nghĩa là lắng nghe trên tất cả các địa chỉ IP trên cổng $PORT.
+# app:app nghĩa là tìm biến 'app' trong file 'app.py'.
+entrypoint: gunicorn -b :$PORT app:app
+
+# Xử lý các yêu cầu
+handlers:
+  - url: /.*
+    script: auto

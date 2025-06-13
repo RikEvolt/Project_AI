@@ -309,7 +309,6 @@ def search_trends():
 
 
 if __name__ == "__main__":
-    # Chạy Flask app ở chế độ debug (chỉ dùng cho phát triển)
-    # production: app.run(host='0.0.0.0', port=5000, debug=False)
-    # app.run(debug=True)
-    pass
+    # App Engine sẽ gán cổng qua biến môi trường PORT
+    port = int(os.environ.get('PORT', 8080)) # App Engine thường dùng 8080 mặc định
+    app.run(host='0.0.0.0', port=port, debug=False)
