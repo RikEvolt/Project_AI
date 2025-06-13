@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: ai-seo-api # Đổi thành tên dịch vụ Render của bạn nếu khác
-    env: python
-    pythonVersion: 3.11.9 # Hoặc 3.10.x. 3.11.x là lựa chọn tốt nhất hiện tại cho TF.
-    buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm
-    startCommand: gunicorn app:app
