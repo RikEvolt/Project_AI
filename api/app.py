@@ -313,21 +313,124 @@
 #     # Mặc định của Flask là 5000, chúng ta sẽ dùng nó nếu PORT không được cung cấp.
 #     port = int(os.environ.get('PORT', 5000))
 #     app.run(host='0.0.0.0', port=port, debug=False)
+# import os
+# import requests # Để tải file từ URL
+# import tensorflow as tf
+# from tensorflow.keras.preprocessing.sequence import pad_sequences
+# import numpy as np
+# import pickle
+# from flask import Flask, request, jsonify
+# from flasgger import Swagger, swag_from
+# from flask_limiter import Limiter
+# from flask_limiter.util import get_remote_address
+
+# # Import các hàm từ utils.py (đảm bảo utils.py cũng nằm trong thư mục 'api/')
+# from .utils import ( # Dùng import tương đối
+#     stable_randint,
+#     extract_keywords_tfidf,
+#     analyze_sections,
+#     get_simulated_pagespeed_score,
+#     get_simulated_top_keywords,
+#     get_simulated_keyword_rank,
+#     get_simulated_search_trends,
+#     preprocess_text
+# )
+
+# # --- Cấu hình tải mô hình từ Firebase Storage ---
+# MODEL_URL = os.getenv("MODEL_URL") # URL công khai của mô hình trên Firebase Storage
+# TOKENIZER_URL = os.getenv("TOKENIZER_URL") # URL công khai của tokenizer
+# MODEL_PATH = "/tmp/keyword_model.h5" # Đường dẫn tạm thời trong serverless function
+# TOKENIZER_PATH = "/tmp/Tokenizer.pkl"
+
+# model = None
+# tokenizer = None
+# MAX_SEQUENCE_LENGTH = 200 # Phải khớp với khi huấn luyện mô hình
+
+# def load_model_from_cloud():
+#     global model, tokenizer
+#     if model is not None and tokenizer is not None:
+#         return
+
+#     print("Đang tải mô hình và tokenizer từ Firebase Storage...")
+#     try:
+#         # Tạo thư mục /tmp nếu chưa có (thường có sẵn trong serverless env)
+#         os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+
+#         # Tải mô hình
+#         with requests.get(MODEL_URL, stream=True) as r:
+#             r.raise_for_status()
+#             with open(MODEL_PATH, 'wb') as f:
+#                 for chunk in r.iter_content(chunk_size=8192):
+#                     f.write(chunk)
+#         print(f"Đã tải mô hình xuống: {MODEL_PATH}")
+
+#         # Tải tokenizer
+#         with requests.get(TOKENIZER_URL, stream=True) as r:
+#             r.raise_for_status()
+#             with open(TOKENIZER_PATH, 'wb') as f:
+#                 for chunk in r.iter_content(chunk_size=8192):
+#                     f.write(chunk)
+#         print(f"Đã tải tokenizer xuống: {TOKENIZER_PATH}")
+
+#         model = tf.keras.models.load_model(MODEL_PATH)
+#         with open(TOKENIZER_PATH, "rb") as f:
+#             tokenizer = pickle.load(f)
+#         print("Mô hình và tokenizer đã được tải và nạp thành công.")
+
+#     except Exception as e:
+#         print(f"Lỗi khi tải hoặc nạp mô hình/tokenizer từ Firebase Storage: {e}")
+#         model = None
+#         tokenizer = None
+
+
+# # Khởi tạo app Flask
+# app = Flask(__name__)
+# Swagger(app) # Khởi tạo Swagger
+
+# limiter = Limiter(
+#     get_remote_address,
+#     app=app,
+#     default_limits=["30 per minute", "1000 per day"]
+# )
+
+# # Đảm bảo các route gọi load_model_from_cloud()
+# @app.route("/predict", methods=["POST"])
+# @limiter.limit("10 per minute")
+# @swag_from({ # ... Swagger docs ...
+# })
+# def predict():
+#     load_model_from_cloud() # Đảm bảo mô hình được tải
+#     if model is None or tokenizer is None:
+#         return jsonify({"error": "Mô hình hoặc tokenizer chưa sẵn sàng. Vui lòng thử lại sau giây lát."}), 503
+#     # ... (phần còn lại của predict) ...
+
+# @app.route("/analyze", methods=["POST"])
+# @limiter.limit("5 per minute")
+# @swag_from({ # ... Swagger docs ...
+# })
+# def analyze():
+#     load_model_from_cloud() # Đảm bảo mô hình được tải
+#     if model is None or tokenizer is None:
+#         return jsonify({"error": "Mô hình hoặc tokenizer chưa sẵn sàng. Vui lòng thử lại sau giây lát."}), 503
+#     # ... (phần còn lại của analyze) ...
+
+# # Không cần khối if __name__ == "__main__": app.run(...) khi deploy serverless
+
 import os
-import requests # Để tải file từ URL
+import requests
 import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import numpy as np
 import pickle
 from flask import Flask, request, jsonify
-from flasgger import Swagger, swag_from
+# LOẠI BỎ: from flasgger import Swagger, swag_from
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 # Import các hàm từ utils.py (đảm bảo utils.py cũng nằm trong thư mục 'api/')
-from .utils import ( # Dùng import tương đối
+from .utils import (
     stable_randint,
-    extract_keywords_tfidf,
+    # LOẠI BỎ: extract_keywords_tfidf,
     analyze_sections,
     get_simulated_pagespeed_score,
     get_simulated_top_keywords,
@@ -337,26 +440,29 @@ from .utils import ( # Dùng import tương đối
 )
 
 # --- Cấu hình tải mô hình từ Firebase Storage ---
-MODEL_URL = os.getenv("MODEL_URL") # URL công khai của mô hình trên Firebase Storage
-TOKENIZER_URL = os.getenv("TOKENIZER_URL") # URL công khai của tokenizer
-MODEL_PATH = "/tmp/keyword_model.h5" # Đường dẫn tạm thời trong serverless function
+MODEL_URL = os.getenv("MODEL_URL")
+TOKENIZER_URL = os.getenv("TOKENIZER_URL")
+MODEL_PATH = "/tmp/keyword_model.h5"
 TOKENIZER_PATH = "/tmp/Tokenizer.pkl"
 
 model = None
 tokenizer = None
-MAX_SEQUENCE_LENGTH = 200 # Phải khớp với khi huấn luyện mô hình
+MAX_SEQUENCE_LENGTH = 200
 
 def load_model_from_cloud():
     global model, tokenizer
     if model is not None and tokenizer is not None:
+        print("Mô hình đã được nạp, bỏ qua tải lại.")
         return
 
     print("Đang tải mô hình và tokenizer từ Firebase Storage...")
+    if not MODEL_URL or not TOKENIZER_URL:
+        print("Lỗi: MODEL_URL hoặc TOKENIZER_URL không được thiết lập trong biến môi trường.")
+        return
+
     try:
-        # Tạo thư mục /tmp nếu chưa có (thường có sẵn trong serverless env)
         os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
 
-        # Tải mô hình
         with requests.get(MODEL_URL, stream=True) as r:
             r.raise_for_status()
             with open(MODEL_PATH, 'wb') as f:
@@ -364,7 +470,6 @@ def load_model_from_cloud():
                     f.write(chunk)
         print(f"Đã tải mô hình xuống: {MODEL_PATH}")
 
-        # Tải tokenizer
         with requests.get(TOKENIZER_URL, stream=True) as r:
             r.raise_for_status()
             with open(TOKENIZER_PATH, 'wb') as f:
@@ -378,14 +483,12 @@ def load_model_from_cloud():
         print("Mô hình và tokenizer đã được tải và nạp thành công.")
 
     except Exception as e:
-        print(f"Lỗi khi tải hoặc nạp mô hình/tokenizer từ Firebase Storage: {e}")
+        print(f"Lỗi khi tải hoặc nạp mô hình: {e}")
         model = None
         tokenizer = None
 
-
-# Khởi tạo app Flask
 app = Flask(__name__)
-Swagger(app) # Khởi tạo Swagger
+# LOẠI BỎ: Swagger(app)
 
 limiter = Limiter(
     get_remote_address,
@@ -393,25 +496,124 @@ limiter = Limiter(
     default_limits=["30 per minute", "1000 per day"]
 )
 
-# Đảm bảo các route gọi load_model_from_cloud()
+# LOẠI BỎ @swag_from(...) decorators khỏi tất cả các routes
+
 @app.route("/predict", methods=["POST"])
 @limiter.limit("10 per minute")
-@swag_from({ # ... Swagger docs ...
-})
 def predict():
-    load_model_from_cloud() # Đảm bảo mô hình được tải
+    load_model_from_cloud()
     if model is None or tokenizer is None:
-        return jsonify({"error": "Mô hình hoặc tokenizer chưa sẵn sàng. Vui lòng thử lại sau giây lát."}), 503
-    # ... (phần còn lại của predict) ...
+        return jsonify({"error": "Mô hình chưa sẵn sàng. Vui lòng kiểm tra log hoặc thử lại."}), 503
+
+    data = request.get_json()
+    text = data.get("text", "")
+    if not text:
+        return jsonify({"prediction": 0, "confidence": 0.0, "message": "Không có văn bản để dự đoán"}), 400
+
+    processed_text = preprocess_text(text)
+    if not processed_text:
+        return jsonify({"prediction": 0, "confidence": 0.0, "message": "Văn bản quá ngắn hoặc không có nội dung sau khi tiền xử lý."}), 200
+
+    sequence = tokenizer.texts_to_sequences([processed_text])
+    padded = pad_sequences(sequence, maxlen=MAX_SEQUENCE_LENGTH)
+
+    pred = model.predict(padded)[0][0]
+
+    is_seo_friendly = int(pred > 0.5)
+    confidence = float(pred)
+
+    return jsonify({
+        "prediction": is_seo_friendly,
+        "confidence": confidence,
+        "message": "Thân thiện với SEO" if is_seo_friendly else "Chưa thân thiện với SEO",
+        "raw_prediction_score": confidence
+    })
+
 
 @app.route("/analyze", methods=["POST"])
 @limiter.limit("5 per minute")
-@swag_from({ # ... Swagger docs ...
-})
 def analyze():
-    load_model_from_cloud() # Đảm bảo mô hình được tải
+    load_model_from_cloud()
     if model is None or tokenizer is None:
-        return jsonify({"error": "Mô hình hoặc tokenizer chưa sẵn sàng. Vui lòng thử lại sau giây lát."}), 503
-    # ... (phần còn lại của analyze) ...
+        return jsonify({"error": "Mô hình chưa sẵn sàng. Vui lòng kiểm tra log hoặc thử lại."}), 503
 
-# Không cần khối if __name__ == "__main__": app.run(...) khi deploy serverless
+    data = request.get_json()
+    url = data.get("url", "")
+    try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        full_text = soup.get_text(separator=' ', strip=True)
+        if len(full_text) < 100:
+            raise Exception("Không đủ nội dung để phân tích (ít hơn 100 ký tự).")
+
+        processed_text_for_model = preprocess_text(full_text)
+
+        web_score = 0
+        content_score = 0
+        if model and tokenizer and processed_text_for_model:
+            sequence = tokenizer.texts_to_sequences([processed_text_for_model])
+            padded = pad_sequences(sequence, maxlen=MAX_SEQUENCE_LENGTH)
+            pred = model.predict(padded)[0][0]
+            web_score = int(pred * 100)
+            content_score = int(min(95, web_score + stable_randint(-5, 5, url + "content")))
+        else:
+            web_score = stable_randint(40, 80, url + "web_score")
+            content_score = stable_randint(50, 90, url + "content_score")
+
+        keywords_top10 = int((web_score / 100 * 20) + stable_randint(5, 10, url + "kw_top10"))
+        backlinks = int(500 + web_score * 50)
+
+        # LOẠI BỎ keywords_extracted từ response
+        # keywords_extracted = extract_keywords_tfidf(full_text) # LOẠI BỎ DÒNG NÀY
+
+        section_analysis = analyze_sections(soup)
+        pagespeed = get_simulated_pagespeed_score(url)
+
+        overall_score = (
+            (web_score * 0.4) +
+            (pagespeed * 0.2) +
+            (section_analysis["title_score"] * 0.15) +
+            (section_analysis["h1_score"] * 0.15) +
+            (section_analysis["meta_description_score"] * 0.05) +
+            (section_analysis["https_score"] * 0.05)
+        ) / 100
+        overall_score = int(min(100, max(0, overall_score)))
+
+        return jsonify({
+            "url": url,
+            "overall_seo_score": overall_score,
+            "content_quality_score": web_score,
+            "content_readability_score": content_score,
+            "estimated_keywords_top10": keywords_top10,
+            "estimated_backlinks": backlinks,
+            # LOẠI BỎ: "extracted_keywords": keywords_extracted,
+            "onpage_analysis": {
+                "title": section_analysis["title"],
+                "title_score": section_analysis["title_score"],
+                "h1_tags": section_analysis["h1_tags"],
+                "h1_score": section_analysis["h1_score"],
+                "meta_description": section_analysis["meta_description"],
+                "meta_description_score": section_analysis["meta_description_score"],
+                "is_https": section_analysis["is_https"],
+                "https_score": section_analysis["https_score"],
+            },
+            "pagespeed_score": pagespeed,
+            "summary": f"Trang web {url} có điểm SEO tổng thể {overall_score}/100. Điểm chất lượng nội dung {web_score}/100, tốc độ {pagespeed}/100."
+        })
+
+    except requests.exceptions.RequestException as req_err:
+        return jsonify({
+            "error": f"Lỗi khi truy cập URL: {req_err}",
+            "summary": f"Không thể kết nối hoặc tải nội dung từ URL: {url}"
+        }), 400
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "summary": f"Lỗi khi phân tích URL: {url}"
+        }), 400
+
+# Các routes khác giữ nguyên nếu bạn vẫn cần chúng:
+# /top_keywords, /keyword_rank, /search_trends
+# Nhớ loại bỏ @swag_from(...) decorators khỏi chúng
