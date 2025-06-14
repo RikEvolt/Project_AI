@@ -617,3 +617,9 @@ def analyze():
 # Các routes khác giữ nguyên nếu bạn vẫn cần chúng:
 # /top_keywords, /keyword_rank, /search_trends
 # Nhớ loại bỏ @swag_from(...) decorators khỏi chúng
+if __name__ == "__main__":
+    # Trong Docker, app thường chạy trên cổng cố định 5000 hoặc 8080
+    # VÀ Dockerfile sẽ map cổng này ra ngoài.
+    # Hugging Face Spaces sẽ tự xử lý việc ánh xạ cổng.
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
